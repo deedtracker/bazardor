@@ -1,0 +1,28 @@
+RewriteEngine On
+
+# 1. Force non-www (Strip 'www' sub-domain)
+RewriteCond %{HTTP_HOST} ^www\.(.*)$ [NC]
+RewriteRule ^(.*)$ https://%1/$1 [R=301,L]
+
+# 2. Force HTTPS
+RewriteCond %{HTTPS} off
+RewriteRule ^(.*)$ https://%{HTTP_HOST}%{REQUEST_URI} [L,R=301]
+
+# Custom 404 Error Page
+ErrorDocument 404 /404.php
+
+# Sitemap Mapping
+RewriteRule ^sitemap\.xml$ sitemap.php [L]
+
+# Don't rewrite existing files or directories
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# Clean URL: /product/onion -> product.php?slug=onion
+RewriteRule ^product/([a-z0-9\-]+)/?$ product.php?slug=$1 [L,QSA]
+
+# Deny access to includes directory
+RewriteRule ^includes/ - [F,L]
+
+# Deny access to database directory
+RewriteRule ^database/ - [F,L]
