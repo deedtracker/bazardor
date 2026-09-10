@@ -84,10 +84,15 @@ $todayUpdated = array_column($statusStmt->fetchAll(), 'product_id');
                         <h3>দাম আপডেট</h3>
                         <p>আজকের বাজার দর ইনপুট করুন</p>
                     </a>
+                    <a href="products.php" class="admin-action-card">
+                        <span class="material-icons-round">inventory_2</span>
+                        <h3>পণ্য ম্যানেজ</h3>
+                        <p>নতুন পণ্য যোগ ও সেটিং পরিবর্তন</p>
+                    </a>
                     <a href="add-news.php" class="admin-action-card">
                         <span class="material-icons-round">newspaper</span>
                         <h3>খবর যোগ করুন</h3>
-                        <p>নিউজ URL দিন, অটোমেটিক টাইটেল আসবে</p>
+                        <p>নিউজ URL দিন, অটোমেটিক টাইটেল</p>
                     </a>
                 </div>
             </div>

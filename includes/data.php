@@ -272,219 +272,39 @@ function verifyLogin($username, $password) {
     return false;
 }
 
-/**
- * Save daily prices for a product (Smart 64 District Automation).
- * Accepts product_id, date, and the base price (Dhaka retail price).
- *
- * Uses a District Tier system with per-category absolute Taka bounds.
- * Each district is assigned a fixed tier, and each category defines
- * tight [min, max] Taka adjustments per tier. This ensures:
- * - Farming hubs are always cheaper for vegetables
- * - River hubs are always cheaper for fish
- * - Remote hill tracts are always slightly more expensive
- * - Dhaka-adjacent cities stay nearly identical to Dhaka
- */
 function saveDailyPrices($productId, $date, $basePrice) {
     $db = getDB();
+    $basePrice = (int)$basePrice;
 
-    // Insert or update daily_prices with the base average
-    $stmt = $db->prepare('
-        INSERT INTO daily_prices (product_id, price_date, average_price)
-        VALUES (?, ?, ?)
-        ON DUPLICATE KEY UPDATE average_price = VALUES(average_price)
-    ');
-    $stmt->execute([$productId, $date, $basePrice]);
+    // Check if entry already exists for today
+    $stmt = $db->prepare('SELECT id FROM daily_prices WHERE product_id = ? AND price_date = ?');
+    $stmt->execute([$productId, $date]);
+    $existing = $stmt->fetch();
 
-    // Get the daily_price_id
-    $dpStmt = $db->prepare('SELECT id FROM daily_prices WHERE product_id = ? AND price_date = ?');
-    $dpStmt->execute([$productId, $date]);
-    $dailyPriceId = $dpStmt->fetch()['id'];
+    if ($existing) {
+        $dailyPriceId = $existing['id'];
+        // Update the average_price (base price) just in case it changed
+        $db->prepare('UPDATE daily_prices SET average_price = ? WHERE id = ?')->execute([$basePrice, $dailyPriceId]);
+    } else {
+        $insertDp = $db->prepare('INSERT INTO daily_prices (product_id, price_date, average_price) VALUES (?, ?, ?)');
+        $insertDp->execute([$productId, $date, $basePrice]);
+        $dailyPriceId = $db->lastInsertId();
+    }
 
     // Delete old city prices for this entry
     $db->prepare('DELETE FROM city_prices WHERE daily_price_id = ?')->execute([$dailyPriceId]);
 
-    // Get product category
-    $prodStmt = $db->prepare('SELECT category_id FROM products WHERE id = ?');
+    // Get product config
+    $prodStmt = $db->prepare('SELECT pricing_mode, price_difference FROM products WHERE id = ?');
     $prodStmt->execute([$productId]);
-    $catId = (int)$prodStmt->fetch()['category_id'];
+    $prodRow = $prodStmt->fetch();
+    
+    // Fallbacks if columns don't exist yet
+    $pricingMode = $prodRow['pricing_mode'] ?? 'variable';
+    $priceDiff = isset($prodRow['price_difference']) ? (int)$prodRow['price_difference'] : 5;
 
     // Get all 64 districts
     $cities = getAllCities();
-
-    // =============================================
-    // District Tier Assignments
-    // =============================================
-    $districtTiers = [
-        // Dhaka — exact base price
-        'ঢাকা' => 'dhaka',
-
-        // Dhaka Adjacent — nearly identical to Dhaka
-        'গাজীপুর' => 'dhaka_adjacent',
-        'নারায়ণগঞ্জ' => 'dhaka_adjacent',
-        'মানিকগঞ্জ' => 'dhaka_adjacent',
-        'মুন্সীগঞ্জ' => 'dhaka_adjacent',
-        'নরসিংদী' => 'dhaka_adjacent',
-        'টাঙ্গাইল' => 'dhaka_adjacent',
-
-        // Divisional Cities — slight variance
-        'চট্টগ্রাম' => 'divisional',
-        'রাজশাহী' => 'divisional',
-        'খুলনা' => 'divisional',
-        'সিলেট' => 'divisional',
-        'রংপুর' => 'divisional',
-        'বরিশাল' => 'divisional',
-        'ময়মনসিংহ' => 'divisional',
-
-        // Farming Hubs — cheaper for vegetables & spices
-        'বগুড়া' => 'farming_hub',
-        'যশোর' => 'farming_hub',
-        'দিনাজপুর' => 'farming_hub',
-        'পঞ্চগড়' => 'farming_hub',
-        'ঠাকুরগাঁও' => 'farming_hub',
-        'নাটোর' => 'farming_hub',
-        'জয়পুরহাট' => 'farming_hub',
-
-        // River/Fish Hubs — cheaper for fish
-        'চাঁদপুর' => 'river_hub',
-        'ভোলা' => 'river_hub',
-        'পটুয়াখালী' => 'river_hub',
-        'কক্সবাজার' => 'river_hub',
-        'সুনামগঞ্জ' => 'river_hub',
-        'নেত্রকোণা' => 'river_hub',
-        'বরগুনা' => 'river_hub',
-
-        // Remote / Hill Tracts — always slightly more expensive
-        'বান্দরবান' => 'remote',
-        'খাগড়াছড়ি' => 'remote',
-        'রাঙ্গামাটি' => 'remote',
-
-        // Mid Tier — all remaining districts (standard variance)
-        'ফরিদপুর' => 'mid_tier',
-        'গোপালগঞ্জ' => 'mid_tier',
-        'কিশোরগঞ্জ' => 'mid_tier',
-        'মাদারীপুর' => 'mid_tier',
-        'রাজবাড়ী' => 'mid_tier',
-        'শরীয়তপুর' => 'mid_tier',
-        'ব্রাহ্মণবাড়িয়া' => 'mid_tier',
-        'কুমিল্লা' => 'mid_tier',
-        'ফেনী' => 'mid_tier',
-        'লক্ষ্মীপুর' => 'mid_tier',
-        'নোয়াখালী' => 'mid_tier',
-        'নওগাঁ' => 'mid_tier',
-        'চাঁপাইনবাবগঞ্জ' => 'mid_tier',
-        'পাবনা' => 'mid_tier',
-        'সিরাজগঞ্জ' => 'mid_tier',
-        'বাগেরহাট' => 'mid_tier',
-        'চুয়াডাঙ্গা' => 'mid_tier',
-        'ঝিনাইদহ' => 'mid_tier',
-        'কুষ্টিয়া' => 'mid_tier',
-        'মাগুরা' => 'mid_tier',
-        'মেহেরপুর' => 'mid_tier',
-        'নড়াইল' => 'mid_tier',
-        'সাতক্ষীরা' => 'mid_tier',
-        'ঝালকাঠি' => 'mid_tier',
-        'পিরোজপুর' => 'mid_tier',
-        'হবিগঞ্জ' => 'mid_tier',
-        'মৌলভীবাজার' => 'mid_tier',
-        'গাইবান্ধা' => 'mid_tier',
-        'কুড়িগ্রাম' => 'mid_tier',
-        'লালমনিরহাট' => 'mid_tier',
-        'নীলফামারী' => 'mid_tier',
-        'জামালপুর' => 'mid_tier',
-        'শেরপুর' => 'mid_tier',
-    ];
-
-    // =============================================
-    // Per-Category Taka Bounds: [min, max] per tier
-    // Final price = basePrice + random_int(min, max)
-    // =============================================
-    $categoryBounds = [
-        // Category 1: সবজি (Vegetables) — high daily fluctuation
-        1 => [
-            'dhaka'          => [0, 0],
-            'dhaka_adjacent' => [-2, 3],
-            'divisional'     => [-3, 5],
-            'farming_hub'    => [-8, -2],   // Always cheaper
-            'mid_tier'       => [-3, 5],
-            'river_hub'      => [-2, 5],
-            'remote'         => [3, 8],     // Always more expensive
-        ],
-        // Category 2: মশলা (Spices — Onion, Garlic, Ginger) — medium fluctuation
-        2 => [
-            'dhaka'          => [0, 0],
-            'dhaka_adjacent' => [-2, 2],
-            'divisional'     => [-3, 5],
-            'farming_hub'    => [-5, -1],
-            'mid_tier'       => [-2, 5],
-            'river_hub'      => [0, 5],
-            'remote'         => [3, 8],
-        ],
-        // Category 3: প্রোটিন (Egg) — very stable
-        3 => [
-            'dhaka'          => [0, 0],
-            'dhaka_adjacent' => [-1, 2],
-            'divisional'     => [-2, 3],
-            'farming_hub'    => [-3, 0],
-            'mid_tier'       => [-2, 3],
-            'river_hub'      => [-1, 3],
-            'remote'         => [2, 5],
-        ],
-        // Category 4: মাংস (Meat — Beef, Mutton, Chicken) — stable, high price
-        4 => [
-            'dhaka'          => [0, 0],
-            'dhaka_adjacent' => [-5, 5],
-            'divisional'     => [-10, 10],
-            'farming_hub'    => [-15, -5],
-            'mid_tier'       => [-10, 10],
-            'river_hub'      => [-5, 10],
-            'remote'         => [5, 20],
-        ],
-        // Category 5: মাছ (Fish) — river hubs are much cheaper
-        5 => [
-            'dhaka'          => [0, 0],
-            'dhaka_adjacent' => [-3, 3],
-            'divisional'     => [-5, 8],
-            'farming_hub'    => [-3, 5],
-            'mid_tier'       => [-3, 8],
-            'river_hub'      => [-15, -3],  // Always cheaper for fish
-            'remote'         => [5, 15],
-        ],
-    ];
-
-    // Fallback bounds for any unknown category (safe, tight variance)
-    $defaultBounds = [
-        'dhaka'          => [0, 0],
-        'dhaka_adjacent' => [-1, 2],
-        'divisional'     => [-2, 3],
-        'farming_hub'    => [-3, 0],
-        'mid_tier'       => [-2, 3],
-        'river_hub'      => [-1, 3],
-        'remote'         => [2, 5],
-    ];
-
-    // Select the bounds for this product's category
-    $bounds = $categoryBounds[$catId] ?? $defaultBounds;
-
-    // =============================================
-    // Category-specific tier overrides
-    // Some districts switch tiers depending on category
-    // =============================================
-    $tierOverrides = [];
-
-    if ($catId === 1 || $catId === 2) {
-        // For vegetables & spices: divisional cities that are also
-        // farming regions should act as farming_hub
-        $tierOverrides['রাজশাহী'] = 'farming_hub';
-        $tierOverrides['রংপুর'] = 'farming_hub';
-        $tierOverrides['ময়মনসিংহ'] = 'farming_hub';
-    }
-
-    if ($catId === 5) {
-        // For fish: divisional cities near rivers act as river_hub
-        $tierOverrides['বরিশাল'] = 'river_hub';
-        $tierOverrides['ময়মনসিংহ'] = 'river_hub';
-        // Cox's Bazar is already river_hub in base tiers (sea fish)
-    }
 
     // Safety floor: price can never drop below 50% of base
     $priceFloor = max(1, (int)round($basePrice * 0.5));
@@ -494,23 +314,23 @@ function saveDailyPrices($productId, $date, $basePrice) {
 
     foreach ($cities as $city) {
         $cName = $city['name'];
+        
+        // Exact price for Dhaka
+        if ($cName === 'ঢাকা') {
+            $insertStmt->execute([$dailyPriceId, $city['id'], $basePrice]);
+            continue;
+        }
 
-        // Determine this district's tier (with category override if applicable)
-        $tier = $tierOverrides[$cName] ?? ($districtTiers[$cName] ?? 'mid_tier');
-
-        // Get the [min, max] Taka bounds for this tier
-        $range = $bounds[$tier] ?? [0, 0];
-
-        // Calculate the adjustment
-        $adjustment = random_int($range[0], $range[1]);
-
-        // Final price
+        // Calculate random variance
+        $adjustment = random_int(-$priceDiff, $priceDiff);
         $calculated = $basePrice + $adjustment;
 
-        // Round to nearest 5 Tk (খুচরা বাজার always uses 20, 25, 30, 35...)
-        $calculated = round($calculated / 5) * 5;
+        // If the price difference is large (e.g. 5 or more), round to nearest 5 Tk for realism
+        if ($priceDiff >= 4) {
+            $calculated = round($calculated / 5) * 5;
+        }
 
-        // Safety floor — never below 50% of base, never below 1
+        // Final price
         $finalPrice = max($priceFloor, $calculated);
 
         $insertStmt->execute([$dailyPriceId, $city['id'], $finalPrice]);
