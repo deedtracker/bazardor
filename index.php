@@ -47,12 +47,29 @@ $pageUrl = SITE_URL;
     <noscript><link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"></noscript>
 </head>
 <body>
+<?php
+// Calculate updated products count
+$todayFormatted = today();
+$totalProducts = count($products);
+$updatedProducts = 0;
+
+foreach ($products as $p) {
+    if ($p['latest_date'] === $todayFormatted) {
+        $updatedProducts++;
+    }
+}
+$bengaliUpdated = toBengali($updatedProducts);
+$bengaliTotal = toBengali($totalProducts);
+?>
     <div class="wrap home-wrap">
         <div class="topbar">
             <div class="brand">
                 <img class="brand-logo" src="/assets/logo.png" alt="<?= e(SITE_NAME) ?>" width="130" height="32" onerror="this.style.display='none'">
             </div>
-            <div class="datestamp"><?= $todayBengali ?></div>
+            <div class="update-badge">
+                <span class="pulse-dot"></span>
+                আপডেট <?= $bengaliUpdated ?>/<?= $bengaliTotal ?>
+            </div>
         </div>
 
 
