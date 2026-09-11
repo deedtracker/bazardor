@@ -272,7 +272,7 @@ function verifyLogin($username, $password) {
     return false;
 }
 
-function saveDailyPrices($productId, $date, $basePrice) {
+function saveDailyPrices($productId, $date, $basePrice, $isAuto = 0) {
     $db = getDB();
     $basePrice = (int)$basePrice;
 
@@ -283,11 +283,12 @@ function saveDailyPrices($productId, $date, $basePrice) {
 
     if ($existing) {
         $dailyPriceId = $existing['id'];
-        // Update the average_price (base price) just in case it changed
-        $db->prepare('UPDATE daily_prices SET average_price = ? WHERE id = ?')->execute([$basePrice, $dailyPriceId]);
+        // Update the average_price (base price) and is_auto flag
+        $db->prepare('UPDATE daily_prices SET average_price = ?, is_auto = ? WHERE id = ?')
+           ->execute([$basePrice, $isAuto, $dailyPriceId]);
     } else {
-        $insertDp = $db->prepare('INSERT INTO daily_prices (product_id, price_date, average_price) VALUES (?, ?, ?)');
-        $insertDp->execute([$productId, $date, $basePrice]);
+        $insertDp = $db->prepare('INSERT INTO daily_prices (product_id, price_date, average_price, is_auto) VALUES (?, ?, ?, ?)');
+        $insertDp->execute([$productId, $date, $basePrice, $isAuto]);
         $dailyPriceId = $db->lastInsertId();
     }
 
@@ -299,12 +300,18 @@ function saveDailyPrices($productId, $date, $basePrice) {
     $prodStmt->execute([$productId]);
     $prodRow = $prodStmt->fetch();
     
-    // Fallbacks if columns don't exist yet
     $pricingMode = $prodRow['pricing_mode'] ?? 'variable';
     $priceDiff = isset($prodRow['price_difference']) ? (int)$prodRow['price_difference'] : 5;
 
-    // Get all 64 districts
+    // Get all 64 districts with their weather
     $cities = getAllCities();
+    
+    // Fetch weather mapping
+    $weatherStmt = $db->query("SELECT city_id, rain_mm, temperature, weather_code FROM city_weather");
+    $weatherData = [];
+    while ($row = $weatherStmt->fetch()) {
+        $weatherData[$row['city_id']] = $row;
+    }
 
     // Safety floor: price can never drop below 50% of base
     $priceFloor = max(1, (int)round($basePrice * 0.5));
@@ -314,26 +321,52 @@ function saveDailyPrices($productId, $date, $basePrice) {
 
     foreach ($cities as $city) {
         $cName = $city['name'];
+        $cId = $city['id'];
         
         // Exact price for Dhaka
         if ($cName === 'ঢাকা') {
-            $insertStmt->execute([$dailyPriceId, $city['id'], $basePrice]);
+            $insertStmt->execute([$dailyPriceId, $cId, $basePrice]);
             continue;
         }
 
-        // Calculate random variance
+        // Apply Weather Variance
+        $weatherModifier = 0;
+        if (isset($weatherData[$cId])) {
+            $rain = (float)$weatherData[$cId]['rain_mm'];
+            $temp = (float)$weatherData[$cId]['temperature'];
+            
+            // If heavy rain (> 5mm) or extreme heat (> 38C), push price upwards
+            if ($rain > 5.0) {
+                // Bias upwards by picking a higher random range
+                $weatherModifier = (int)ceil($priceDiff * 0.5); // Push up by 50% of difference
+            } elseif ($temp > 38.0) {
+                $weatherModifier = (int)ceil($priceDiff * 0.3); // Push up by 30% of difference
+            }
+        }
+
+        // Calculate random variance but skew it with the weather modifier
         $adjustment = random_int(-$priceDiff, $priceDiff);
+        
+        // If weather is bad, we shift the adjustment upwards but don't exceed max possible diff by too much
+        $adjustment += $weatherModifier;
+        if ($adjustment > ($priceDiff * 1.5)) {
+            $adjustment = (int)($priceDiff * 1.5);
+        }
+
         $calculated = $basePrice + $adjustment;
 
-        // If the price difference is large (e.g. 5 or more), round to nearest 5 Tk for realism
-        if ($priceDiff >= 4) {
+        // If it's a variable item (like vegetables/fish), always round to nearest 5 Taka for realism
+        // If it's a flat item (like rice/sugar), keep exact Taka amounts
+        if ($pricingMode === 'variable') {
             $calculated = round($calculated / 5) * 5;
+        } else {
+            $calculated = round($calculated);
         }
 
         // Final price
         $finalPrice = max($priceFloor, $calculated);
 
-        $insertStmt->execute([$dailyPriceId, $city['id'], $finalPrice]);
+        $insertStmt->execute([$dailyPriceId, $cId, $finalPrice]);
     }
 
     return true;
