@@ -32,8 +32,9 @@ $latestDate = $detail['latestDate'];
 $feedItems = getLatestNotifications();
 
 // SEO Meta
-$pageTitle = e($product['name']) . ' এর আজকের বাজারদর — ' . toBengali(round($currentPrice)) . ' টাকা/' . e($product['unit']) . ' | ' . SITE_NAME;
-$pageDescription = 'বাংলাদেশের ৬৪ জেলায় আজ ' . e($product['name']) . ' এর দাম প্রতি ' . e($product['unit']) . ' গড়ে ' . toBengali(round($currentPrice)) . ' টাকা। গতকালের চেয়ে ' . getDiffLabel($diff) . '। আপনার এলাকার সঠিক খুচরা বাজারদর, গত ৭ দিনের দামের গ্রাফ এবং আগামীকালের দামের পূর্বাভাস জানতে এখনই ভিজিট করুন।';
+$possessiveName = getBengaliPossessive($product['name']);
+$pageTitle = e($possessiveName) . ' আজকের বাজারদর — ' . toBengali(round($currentPrice)) . ' টাকা/' . e($product['unit']) . ' | ' . SITE_NAME;
+$pageDescription = 'বাংলাদেশের ৬৪ জেলায় আজ ' . e($possessiveName) . ' দাম প্রতি ' . e($product['unit']) . ' গড়ে ' . toBengali(round($currentPrice)) . ' টাকা। গতকালের চেয়ে ' . getDiffLabel($diff) . '। আপনার এলাকার সঠিক খুচরা বাজারদর, গত ৭ দিনের দামের গ্রাফ এবং আগামীকালের দামের পূর্বাভাস জানতে এখনই ভিজিট করুন।';
 $pageUrl = SITE_URL . '/product/' . e($product['slug']);
 $ogImage = SITE_URL . '/' . e($product['icon_path']);
 ?>
@@ -144,7 +145,7 @@ $ogImage = SITE_URL . '/' . e($product['icon_path']);
                             <img src="/assets/thumbs/<?= e(pathinfo($product['icon_path'], PATHINFO_FILENAME)) ?>.webp" alt="<?= e($product['name']) ?>" width="64" height="64" loading="lazy" decoding="async" onerror="this.src='/<?= e($product['icon_path']) ?>'">
                         </div>
                         <div>
-                            <div class="product-hero-title"><?= e($product['name']) ?> এর আজকের বাজারদর</div>
+                            <div class="product-hero-title"><?= e(getBengaliPossessive($product['name'])) ?> আজকের বাজারদর</div>
                             <div class="product-hero-sub">সর্বশেষ হালনাগাদ: <?= toBengaliDate($latestDate) ?></div>
                         </div>
                     </div>

@@ -14,6 +14,19 @@ function toBengali($num) {
 }
 
 /**
+ * Append correct Bengali possessive suffix to a word ('র' or 'ের').
+ */
+function getBengaliPossessive($word) {
+    if (empty($word)) return '';
+    $lastChar = mb_substr(trim($word), -1, 1, 'UTF-8');
+    $vowelSigns = ['া', 'ি', 'ী', 'ু', 'ূ', 'ৃ', 'ে', 'ৈ', 'ো', 'ৌ'];
+    if (in_array($lastChar, $vowelSigns, true)) {
+        return $word . 'র';
+    }
+    return $word . 'ের';
+}
+
+/**
  * Format a date string (YYYY-MM-DD) to Bengali date (e.g., "৫ সেপ্টেম্বর, ২০২৬").
  */
 function toBengaliDate($dateStr, $includeYear = true) {

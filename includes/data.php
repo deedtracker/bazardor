@@ -227,12 +227,13 @@ function getProductDetail($slug) {
 
     // Build summary text
     $todayDate = toBengaliDate($latestPrice ? $latestPrice['price_date'] : today());
+    $possessiveName = getBengaliPossessive($product['name']);
     if ($diff > 0) {
-        $summary = "আজ {$todayDate}। গতকালের চেয়ে আজ <strong>" . e($product['name']) . "</strong> এর দাম " . e($product['unit']) . "তে <strong>" . toBengali($diff) . " টাকা বেড়েছে</strong>। বর্তমানে প্রতি " . e($product['unit']) . " " . e($product['name']) . " গড়ে <strong>" . toBengali($currentPrice) . " টাকায়</strong> বিক্রি হচ্ছে এবং সামনের দিনগুলোতে এই দাম আরও বাড়তে পারে।";
+        $summary = "আজ {$todayDate}। গতকালের চেয়ে আজ <strong>" . e($possessiveName) . "</strong> দাম " . e($product['unit']) . "তে <strong>" . toBengali($diff) . " টাকা বেড়েছে</strong>। বর্তমানে প্রতি " . e($product['unit']) . " " . e($product['name']) . " গড়ে <strong>" . toBengali($currentPrice) . " টাকায়</strong> বিক্রি হচ্ছে এবং সামনের দিনগুলোতে এই দাম আরও বাড়তে পারে।";
     } elseif ($diff < 0) {
-        $summary = "আজ {$todayDate}। গতকালের চেয়ে আজ <strong>" . e($product['name']) . "</strong> এর দাম " . e($product['unit']) . "তে <strong>" . toBengali(abs($diff)) . " টাকা কমেছে</strong>। বর্তমানে প্রতি " . e($product['unit']) . " " . e($product['name']) . " গড়ে <strong>" . toBengali($currentPrice) . " টাকায়</strong> বিক্রি হচ্ছে। ক্রেতাদের জন্য এটি ভালো খবর।";
+        $summary = "আজ {$todayDate}। গতকালের চেয়ে আজ <strong>" . e($possessiveName) . "</strong> দাম " . e($product['unit']) . "তে <strong>" . toBengali(abs($diff)) . " টাকা কমেছে</strong>। বর্তমানে প্রতি " . e($product['unit']) . " " . e($product['name']) . " গড়ে <strong>" . toBengali($currentPrice) . " টাকায়</strong> বিক্রি হচ্ছে। ক্রেতাদের জন্য এটি ভালো খবর।";
     } else {
-        $summary = "আজ {$todayDate}। আজ <strong>" . e($product['name']) . "</strong> এর দাম গতকালের <strong>মতোই রয়েছে</strong>। বর্তমানে প্রতি " . e($product['unit']) . " " . e($product['name']) . " গড়ে <strong>" . toBengali($currentPrice) . " টাকায়</strong> বিক্রি হচ্ছে। বাজার স্থিতিশীল আছে।";
+        $summary = "আজ {$todayDate}। আজ <strong>" . e($possessiveName) . "</strong> দাম গতকালের <strong>মতোই রয়েছে</strong>। বর্তমানে প্রতি " . e($product['unit']) . " " . e($product['name']) . " গড়ে <strong>" . toBengali($currentPrice) . " টাকায়</strong> বিক্রি হচ্ছে। বাজার স্থিতিশীল আছে।";
     }
 
     return [
