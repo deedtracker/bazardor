@@ -94,6 +94,11 @@ $todayUpdated = array_column($statusStmt->fetchAll(), 'product_id');
                         <h3>খবর যোগ করুন</h3>
                         <p>নিউজ URL দিন, অটোমেটিক টাইটেল</p>
                     </a>
+                    <a href="generate-image.php" class="admin-action-card">
+                        <span class="material-icons-round">image</span>
+                        <h3>ডিজাইন জেনারেট</h3>
+                        <p>ফেসবুক পোস্টের জন্য ছবি তৈরি করুন</p>
+                    </a>
                 </div>
             </div>
 
