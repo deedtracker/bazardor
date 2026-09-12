@@ -654,6 +654,15 @@ $products = getAllProducts();
             `<svg viewBox="0 0 48 48" fill="none"><path d="M8 12H40V20C40 20 37 24 34 20C31 24 28 20 28 20C28 20 25 24 22 20C19 24 16 20 16 20C16 24 8 20 8 20V12Z" fill="currentColor" opacity="0.3"/><rect x="8" y="10" width="32" height="3" rx="1" fill="currentColor"/><rect x="10" y="20" width="28" height="20" fill="currentColor" opacity="0.15"/><path d="M10 20H38V40H10V20Z" stroke="currentColor" stroke-width="2"/><rect x="19" y="28" width="10" height="12" rx="1" fill="currentColor" opacity="0.3"/><rect x="19" y="28" width="10" height="12" rx="1" stroke="currentColor" stroke-width="1.5"/><rect x="13" y="23" width="6" height="5" rx="0.5" fill="currentColor" opacity="0.2"/><rect x="13" y="23" width="6" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2"/><rect x="29" y="23" width="6" height="5" rx="0.5" fill="currentColor" opacity="0.2"/><rect x="29" y="23" width="6" height="5" rx="0.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 13C8 13 11 18 16 13C21 18 22 18 24 13C26 18 27 18 32 13C37 18 40 13 40 13" stroke="currentColor" stroke-width="1.5" fill="none"/></svg>`
         ];
 
+        function getBengaliPossessive(word) {
+            const lastChar = word.slice(-1);
+            const vowelSigns = ['া', 'ি', 'ী', 'ু', 'ূ', 'ৃ', 'ে', 'ৈ', 'ো', 'ৌ'];
+            if (vowelSigns.includes(lastChar)) {
+                return word + 'র';
+            }
+            return word + 'ের';
+        }
+
         document.getElementById('product-select').addEventListener('change', async (e) => {
             const id = e.target.value;
             if(!id) return;
@@ -667,7 +676,7 @@ $products = getAllProducts();
             }
             
             // Update Card 1
-            document.getElementById('display-product').textContent = data.name + 'ের';
+            document.getElementById('display-product').textContent = getBengaliPossessive(data.name);
             document.getElementById('display-date').textContent = data.date_bn;
             document.getElementById('display-product-icon').src = data.icon;
             
