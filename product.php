@@ -49,18 +49,24 @@ $ogImage = SITE_URL . '/' . e($product['icon_path']);
     
     <script type="application/ld+json">
     {
-      "@context": "https://schema.org/",
-      "@type": "Product",
-      "name": "<?= e($product['name']) ?>",
+      "@context": "https://schema.org",
+      "@type": "Article",
+      "headline": "<?= $pageTitle ?>",
       "image": "<?= $ogImage ?>",
       "description": "<?= e($pageDescription) ?>",
-      "offers": {
-        "@type": "Offer",
-        "url": "<?= $pageUrl ?>",
-        "priceCurrency": "BDT",
-        "price": "<?= round($currentPrice) ?>",
-        "availability": "https://schema.org/InStock"
-      }
+      "author": {
+        "@type": "Organization",
+        "name": "<?= SITE_NAME ?>"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "<?= SITE_NAME ?>",
+        "logo": {
+          "@type": "ImageObject",
+          "url": "<?= SITE_URL ?>/assets/logo.png"
+        }
+      },
+      "dateModified": "<?= $latestDate ?>"
     }
     </script>
 
