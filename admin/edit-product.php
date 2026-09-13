@@ -74,17 +74,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             }
         }
 
-        // Slug generation
-        $slug = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $name_en));
-        $slug = trim($slug, '-');
-
         // Update DB
         $updateStmt = $db->prepare("
             UPDATE products 
-            SET name = ?, name_en = ?, slug = ?, unit = ?, category_id = ?, icon_path = ?, pricing_mode = ?, price_difference = ?
+            SET name = ?, name_en = ?, unit = ?, category_id = ?, icon_path = ?, pricing_mode = ?, price_difference = ?
             WHERE id = ?
         ");
-        $updateStmt->execute([$name, $name_en, $slug, $unit, $category_id, $iconPath, $pricing_mode, $price_difference, $id]);
+        $updateStmt->execute([$name, $name_en, $unit, $category_id, $iconPath, $pricing_mode, $price_difference, $id]);
 
         header('Location: products.php?success=1');
         exit;

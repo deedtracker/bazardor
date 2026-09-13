@@ -35,13 +35,19 @@ function getBengaliPossessive($word) {
 }
 
 /**
- * Format price, handling min and max ranges if available.
+ * Round a price to the nearest 5 for retail formatting (e.g. 63 -> 65, 97 -> 95).
+ */
+function roundRetailPrice($price) {
+    if ($price <= 0) return 0;
+    return round($price / 5) * 5;
+}
+
+/**
+ * Format price for display. 
+ * The user requested to only show the nicely rounded average instead of the min/max range here.
  */
 function formatPriceRange($price, $min = null, $max = null) {
-    if ($min && $max && $min != $max) {
-        return toBengali($min) . ' - ' . toBengali($max);
-    }
-    return toBengali(round($price));
+    return toBengali(roundRetailPrice($price));
 }
 
 /**

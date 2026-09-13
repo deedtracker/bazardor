@@ -230,12 +230,21 @@ function getProductDetail($slug) {
     // Build summary text
     $todayDate = toBengaliDate($latestPrice ? $latestPrice['price_date'] : today());
     $possessiveName = getBengaliPossessive($product['name']);
+    $niceCurrentPrice = roundRetailPrice($currentPrice);
+    
+    $minPrice = $latestPrice['min_price'] ?? null;
+    $maxPrice = $latestPrice['max_price'] ?? null;
+    $rangeText = "";
+    if ($minPrice && $maxPrice && $minPrice !== $maxPrice) {
+        $rangeText = " বাজারে এর সর্বনিম্ন দাম <strong>" . toBengali(roundRetailPrice($minPrice)) . " টাকা</strong> এবং সর্বোচ্চ <strong>" . toBengali(roundRetailPrice($maxPrice)) . " টাকা</strong> পর্যন্ত দেখা গেছে।";
+    }
+    
     if ($diff > 0) {
-        $summary = "আজ {$todayDate}। গতকালের চেয়ে আজ <strong>" . e($possessiveName) . "</strong> দাম " . e($product['unit']) . "তে <strong>" . toBengali($diff) . " টাকা বেড়েছে</strong>। বর্তমানে প্রতি " . e($product['unit']) . " " . e($product['name']) . " গড়ে <strong>" . toBengali($currentPrice) . " টাকায়</strong> বিক্রি হচ্ছে এবং সামনের দিনগুলোতে এই দাম আরও বাড়তে পারে।";
+        $summary = "আজ {$todayDate}। গতকালের চেয়ে আজ <strong>" . e($possessiveName) . "</strong> দাম " . e($product['unit']) . "তে <strong>" . toBengali(roundRetailPrice($diff)) . " টাকা বেড়েছে</strong>। বর্তমানে প্রতি " . e($product['unit']) . " " . e($product['name']) . " গড়ে <strong>" . toBengali($niceCurrentPrice) . " টাকায়</strong> বিক্রি হচ্ছে।{$rangeText} সামনের দিনগুলোতে এই দাম আরও বাড়তে পারে।";
     } elseif ($diff < 0) {
-        $summary = "আজ {$todayDate}। গতকালের চেয়ে আজ <strong>" . e($possessiveName) . "</strong> দাম " . e($product['unit']) . "তে <strong>" . toBengali(abs($diff)) . " টাকা কমেছে</strong>। বর্তমানে প্রতি " . e($product['unit']) . " " . e($product['name']) . " গড়ে <strong>" . toBengali($currentPrice) . " টাকায়</strong> বিক্রি হচ্ছে। ক্রেতাদের জন্য এটি ভালো খবর।";
+        $summary = "আজ {$todayDate}। গতকালের চেয়ে আজ <strong>" . e($possessiveName) . "</strong> দাম " . e($product['unit']) . "তে <strong>" . toBengali(roundRetailPrice(abs($diff))) . " টাকা কমেছে</strong>। বর্তমানে প্রতি " . e($product['unit']) . " " . e($product['name']) . " গড়ে <strong>" . toBengali($niceCurrentPrice) . " টাকায়</strong> বিক্রি হচ্ছে।{$rangeText} ক্রেতাদের জন্য এটি ভালো খবর।";
     } else {
-        $summary = "আজ {$todayDate}। আজ <strong>" . e($possessiveName) . "</strong> দাম গতকালের <strong>মতোই রয়েছে</strong>। বর্তমানে প্রতি " . e($product['unit']) . " " . e($product['name']) . " গড়ে <strong>" . toBengali($currentPrice) . " টাকায়</strong> বিক্রি হচ্ছে। বাজার স্থিতিশীল আছে।";
+        $summary = "আজ {$todayDate}। আজ <strong>" . e($possessiveName) . "</strong> দাম গতকালের <strong>মতোই রয়েছে</strong>। বর্তমানে প্রতি " . e($product['unit']) . " " . e($product['name']) . " গড়ে <strong>" . toBengali($niceCurrentPrice) . " টাকায়</strong> বিক্রি হচ্ছে।{$rangeText} বাজার স্থিতিশীল আছে।";
     }
 
     return [
@@ -254,6 +263,7 @@ function getProductDetail($slug) {
         'summary' => $summary,
         'lastUpdated' => $latestPrice ? toBengaliDate($latestPrice['price_date']) : '',
         'latestDate' => $latestPrice ? $latestPrice['price_date'] : today(),
+        'latestPriceData' => $latestPrice,
     ];
 }
 

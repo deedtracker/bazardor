@@ -29,6 +29,7 @@ $trendSummary = $detail['trendSummary'];
 $summaryText = $detail['summary'];
 $lastUpdated = $detail['lastUpdated'];
 $latestDate = $detail['latestDate'];
+$latestPrice = $detail['latestPriceData'];
 $feedItems = getLatestNotifications();
 
 // SEO Meta
@@ -215,7 +216,7 @@ $ogImage = SITE_URL . '/' . e($product['icon_path']);
                                 <?php if ($isExp): ?><span class="city-tag high">বেশি</span><?php endif; ?>
                             </div>
                             <div class="city-price">
-                                <span class="city-price-val"><?= toBengali((float)$c['price']) ?></span>
+                                <span class="city-price-val"><?= toBengali(roundRetailPrice((float)$c['price'])) ?></span>
                                 <span class="city-price-unit">টাকা</span>
                             </div>
                         </div>
@@ -462,7 +463,9 @@ $ogImage = SITE_URL . '/' . e($product['icon_path']);
             
             const digits = ['০', '১', '২', '৩', '৪', '৫', '৬', '৭', '৮', '৯'];
             const toBn = (num) => String(num).replace(/[0-9]/g, d => digits[parseInt(d)]);
-            const priceBn = toBn(parseFloat(c.price));
+            const rawPrice = parseFloat(c.price);
+            const roundedPrice = Math.round(rawPrice / 5) * 5;
+            const priceBn = toBn(roundedPrice);
             
             let tags = '';
             if (isCheap) tags += '<span class="city-tag low">সস্তা</span>';
