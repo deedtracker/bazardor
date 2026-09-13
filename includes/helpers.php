@@ -18,12 +18,30 @@ function toBengali($num) {
  */
 function getBengaliPossessive($word) {
     if (empty($word)) return '';
-    $lastChar = mb_substr(trim($word), -1, 1, 'UTF-8');
+    $word = trim($word);
+    $lastChar = mb_substr($word, -1, 1, 'UTF-8');
+    
+    // If the word ends with a parenthesis, add a space and "এর" 
+    // to prevent awkward formatting like "প্যাকেট)ের"
+    if ($lastChar === ')') {
+        return $word . ' এর';
+    }
+
     $vowelSigns = ['া', 'ি', 'ী', 'ু', 'ূ', 'ৃ', 'ে', 'ৈ', 'ো', 'ৌ'];
     if (in_array($lastChar, $vowelSigns, true)) {
         return $word . 'র';
     }
     return $word . 'ের';
+}
+
+/**
+ * Format price, handling min and max ranges if available.
+ */
+function formatPriceRange($price, $min = null, $max = null) {
+    if ($min && $max && $min != $max) {
+        return toBengali($min) . ' - ' . toBengali($max);
+    }
+    return toBengali(round($price));
 }
 
 /**

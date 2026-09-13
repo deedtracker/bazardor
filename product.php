@@ -157,7 +157,7 @@ $ogImage = SITE_URL . '/' . e($product['icon_path']);
                     </div>
 
                     <div class="price-row">
-                        <div class="price-main">৳<?= toBengali(round($currentPrice)) ?><sub>/ <?= e($product['unit']) ?></sub></div>
+                        <div class="price-main">৳<?= formatPriceRange($currentPrice, $latestPrice['min_price'] ?? null, $latestPrice['max_price'] ?? null) ?><sub>/ <?= e($product['unit']) ?></sub></div>
                         <div class="change-chip <?= $chipCls ?>">
                             <div class="arrow"><?= $chipArrow ?></div>
                             <div class="txt">গতকালের তুলনায়<b><?= $diffText ?></b></div>

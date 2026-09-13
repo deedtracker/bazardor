@@ -36,6 +36,8 @@ function getAllProductsWithPrices() {
             p.id, p.slug, p.name, p.name_en, p.unit, p.icon_path,
             c.name AS category_name,
             dp_today.average_price AS current_price,
+            dp_today.min_price,
+            dp_today.max_price,
             dp_today.price_date AS latest_date,
             dp_prev.average_price AS previous_price
         FROM products p
@@ -273,7 +275,7 @@ function verifyLogin($username, $password) {
     return false;
 }
 
-function saveDailyPrices($productId, $date, $basePrice, $isAuto = 0) {
+function saveDailyPrices($productId, $date, $basePrice, $isAuto = 0, $minPrice = null, $maxPrice = null) {
     $db = getDB();
     $basePrice = (int)$basePrice;
 
@@ -284,12 +286,12 @@ function saveDailyPrices($productId, $date, $basePrice, $isAuto = 0) {
 
     if ($existing) {
         $dailyPriceId = $existing['id'];
-        // Update the average_price (base price) and is_auto flag
-        $db->prepare('UPDATE daily_prices SET average_price = ?, is_auto = ? WHERE id = ?')
-           ->execute([$basePrice, $isAuto, $dailyPriceId]);
+        // Update the average_price (base price), min, max and is_auto flag
+        $db->prepare('UPDATE daily_prices SET average_price = ?, min_price = ?, max_price = ?, is_auto = ? WHERE id = ?')
+           ->execute([$basePrice, $minPrice, $maxPrice, $isAuto, $dailyPriceId]);
     } else {
-        $insertDp = $db->prepare('INSERT INTO daily_prices (product_id, price_date, average_price, is_auto) VALUES (?, ?, ?, ?)');
-        $insertDp->execute([$productId, $date, $basePrice, $isAuto]);
+        $insertDp = $db->prepare('INSERT INTO daily_prices (product_id, price_date, average_price, min_price, max_price, is_auto) VALUES (?, ?, ?, ?, ?, ?)');
+        $insertDp->execute([$productId, $date, $basePrice, $minPrice, $maxPrice, $isAuto]);
         $dailyPriceId = $db->lastInsertId();
     }
 

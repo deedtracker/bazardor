@@ -138,7 +138,7 @@ $bengaliTotal = toBengali($totalProducts);
                                 </div>
                             </div>
                             <div class="item-right">
-                                <div class="item-price">৳ <?= toBengali(round($p['current_price'])) ?></div>
+                                <div class="item-price">৳ <?= formatPriceRange($p['current_price'], $p['min_price'] ?? null, $p['max_price'] ?? null) ?></div>
                                 <div class="item-trend <?= $trendClass ?>">
                                     <span class="material-icons-round trend-icon"><?= $trendIcon ?></span>
                                     <span><?= $diff !== 0 ? $trendText : '০' ?></span>
