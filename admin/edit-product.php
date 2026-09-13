@@ -152,21 +152,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <label>বর্তমান ছবি</label>
                         <img src="/<?= e($product['icon_path']) ?>" class="current-img" alt="">
                         <input type="file" name="icon" class="form-control" accept="image/png, image/jpeg, image/webp">
-                        <small style="color: #6b7280; margin-top: 5px; display: block;">নতুন ছবি আপলোড করলে পুরনোটি মুছে যাবে। (অটো WebP কনভার্ট হবে)</small>
+                        <small style="color: #6b7280; margin-top: 5px; display: block;">নতুন ছবি আপলোড করলে পুরনোটি মুছে যাবে। (অপশনাল)</small>
                     </div>
 
                     <div class="form-group" style="padding-top: 20px; border-top: 1px solid var(--border);">
                         <label>প্রাইসিং মোড (Pricing Mode)</label>
                         <select name="pricing_mode" class="form-control">
                             <option value="variable" <?= ($product['pricing_mode'] ?? 'variable') === 'variable' ? 'selected' : '' ?>>Variable (সাধারণ পণ্য)</option>
-                            <option value="flat" <?= ($product['pricing_mode'] ?? 'variable') === 'flat' ? 'selected' : '' ?>>Flat (সারা দেশে একই দাম, যেমন চাল/ডাল)</option>
+                            <option value="flat" <?= ($product['pricing_mode'] ?? 'variable') === 'flat' ? 'selected' : '' ?>>Flat (সারা দেশে একই দাম, যেমন চিনি)</option>
                         </select>
                     </div>
 
                     <div class="form-group">
                         <label>পার্থক্য (Price Difference Taka)</label>
                         <input type="number" name="price_difference" class="form-control" value="<?= e($product['price_difference'] ?? 5) ?>" min="0" required>
-                        <small style="color: #6b7280; margin-top: 5px; display: block;">অটোমেশন এই পরিমাণ টাকা র‍্যান্ডমভাবে যোগ বা বিয়োগ করবে। Flat পণ্যের জন্য ১ বা ২ দিন, Variable এর জন্য ৫ বা ১০ দিন।</small>
+                        <small style="color: #6b7280; margin-top: 5px; display: block;">অটোমেশন এই পরিমাণ টাকা র‍্যান্ডমভাবে যোগ বা বাদ করে বিভিন্ন শহরের দাম তৈরি করে।</small>
                     </div>
 
                     <div class="form-group" style="margin-top: 30px;">
