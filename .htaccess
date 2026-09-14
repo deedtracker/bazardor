@@ -21,6 +21,11 @@ RewriteCond %{REQUEST_FILENAME} !-d
 # Clean URL: /product/onion -> product.php?slug=onion
 RewriteRule ^product/([a-z0-9\-]+)/?$ product.php?slug=$1 [L,QSA]
 
+# Hide .php extension
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME}\.php -f
+RewriteRule ^([^\.]+)/?$ $1.php [L]
+
 # Deny access to includes directory
 RewriteRule ^includes/ - [F,L]
 

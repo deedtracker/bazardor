@@ -51,6 +51,66 @@ function formatPriceRange($price, $min = null, $max = null) {
 }
 
 /**
+ * Process uploaded image: Resizes main image, creates a 120px thumbnail, and saves both as WebP.
+ * Preserves transparency for PNG/WebP.
+ */
+function processUploadedImage($tmpName, $destPath, $thumbPath) {
+    $imgInfo = getimagesize($tmpName);
+    if ($imgInfo === false) return false;
+    
+    $img = null;
+    switch ($imgInfo[2]) {
+        case IMAGETYPE_JPEG: $img = @imagecreatefromjpeg($tmpName); break;
+        case IMAGETYPE_PNG: $img = @imagecreatefrompng($tmpName); break;
+        case IMAGETYPE_WEBP: $img = @imagecreatefromwebp($tmpName); break;
+    }
+    if (!$img) return false;
+    
+    $w = imagesx($img);
+    $h = imagesy($img);
+
+    // Main Image (Max 800px)
+    $newW = $w;
+    $newH = $h;
+    if ($w > 800) {
+        $newW = 800;
+        $newH = (int)(($h / $w) * $newW);
+    }
+    
+    $mainImg = imagecreatetruecolor($newW, $newH);
+    imagealphablending($mainImg, false);
+    imagesavealpha($mainImg, true);
+    $transparent = imagecolorallocatealpha($mainImg, 255, 255, 255, 127);
+    imagefilledrectangle($mainImg, 0, 0, $newW, $newH, $transparent);
+    imagecopyresampled($mainImg, $img, 0, 0, 0, 0, $newW, $newH, $w, $h);
+    imagewebp($mainImg, $destPath, 80);
+    imagedestroy($mainImg);
+
+    // Thumbnail (Max 120px)
+    $thumbW = 120;
+    $thumbH = (int)(($h / $w) * $thumbW);
+    if ($w < $thumbW) {
+        $thumbW = $w;
+        $thumbH = $h;
+    }
+    
+    $thumbImg = imagecreatetruecolor($thumbW, $thumbH);
+    imagealphablending($thumbImg, false);
+    imagesavealpha($thumbImg, true);
+    $transparent = imagecolorallocatealpha($thumbImg, 255, 255, 255, 127);
+    imagefilledrectangle($thumbImg, 0, 0, $thumbW, $thumbH, $transparent);
+    imagecopyresampled($thumbImg, $img, 0, 0, 0, 0, $thumbW, $thumbH, $w, $h);
+    
+    $thumbDir = dirname($thumbPath);
+    if (!is_dir($thumbDir)) @mkdir($thumbDir, 0755, true);
+    imagewebp($thumbImg, $thumbPath, 80);
+    imagedestroy($thumbImg);
+    imagedestroy($img);
+    
+    return true;
+}
+
+/**
  * Format a date string (YYYY-MM-DD) to Bengali date (e.g., "৫ সেপ্টেম্বর, ২০২৬").
  */
 function toBengaliDate($dateStr, $includeYear = true) {

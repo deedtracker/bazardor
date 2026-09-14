@@ -111,6 +111,9 @@ function looksLikeProduct($row) {
     if ($name === '' || $unit === '') return false;
     if (strlen($name) > 100) return false;
     
+    // Explicitly exclude MS Rod (Construction Materials)
+    if (strpos($name, 'রড') !== false) return false;
+    
     // In TCB sheets, col 2,3 are today's min/max. col 4,5 are 1 week ago min/max
     return isNum($row[2]) || isNum($row[3]) || isNum($row[4]) || isNum($row[5]);
 }

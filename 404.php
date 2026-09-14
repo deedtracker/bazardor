@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/includes/config.php';
+require_once __DIR__ . '/includes/helpers.php';
 http_response_code(404);
 ?>
 <!DOCTYPE html>

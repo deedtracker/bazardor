@@ -40,11 +40,21 @@ $pageUrl = SITE_URL;
     <link rel="icon" type="image/png" sizes="192x192" href="<?= SITE_URL ?>/assets/favicon.png">
     <link rel="apple-touch-icon" href="<?= SITE_URL ?>/assets/favicon.png">
 
+    <!-- Phosphor Icons for Footer -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
     <link rel="stylesheet" href="style.css">
     <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin>
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet" media="print" onload="this.media='all'">
     <noscript><link href="https://fonts.googleapis.com/icon?family=Material+Icons+Round" rel="stylesheet"></noscript>
+    <style>
+    /* CSS Blinking Cursor Animation */
+    @keyframes blink {
+        0%, 100% { border-color: transparent; }
+        50% { border-color: var(--primary); }
+    }
+    </style>
 </head>
 <body>
 <?php
@@ -60,6 +70,60 @@ foreach ($products as $p) {
 }
 $bengaliUpdated = toBengali($updatedProducts);
 $bengaliTotal = toBengali($totalProducts);
+
+// Filter for one-word products (no spaces, no brackets)
+$simpleProducts = [];
+foreach ($products as $p) {
+    if (strpos($p['name'], ' ') === false && strpos($p['name'], '(') === false && strpos($p['name'], '-') === false) {
+        $simpleProducts[] = $p;
+    }
+}
+// Fallback if none found
+if (empty($simpleProducts)) $simpleProducts = $products;
+
+// Generate dynamic typing strings
+$typingStrings = [];
+shuffle($simpleProducts);
+$count = 0;
+foreach ($simpleProducts as $item) {
+    if ($count >= 6) break;
+    
+    if ($item['diff'] > 0) {
+        $typingStrings[] = [
+            'text' => "আজ " . e(getBengaliPossessive($item['name'])) . " দাম বেড়েছে <span style='color:var(--red);font-weight:bold;'>" . toBengali(roundRetailPrice($item['diff'])) . " টাকা</span>"
+        ];
+    } elseif ($item['diff'] < 0) {
+        $typingStrings[] = [
+            'text' => "আজ " . e(getBengaliPossessive($item['name'])) . " দাম কমেছে <span style='color:var(--primary);font-weight:bold;'>" . toBengali(roundRetailPrice(abs($item['diff']))) . " টাকা</span>"
+        ];
+    } else {
+        $typingStrings[] = [
+            'text' => "আজ " . e($item['name']) . " বিক্রি হচ্ছে <span style='color:var(--primary);font-weight:bold;'>" . toBengali(roundRetailPrice($item['current_price'])) . " টাকায়</span>"
+        ];
+    }
+    $count++;
+}
+
+// Generate Ticker Data
+$tickerItems = [];
+foreach ($products as $p) {
+    if ($p['diff'] != 0) {
+        $tickerItems[] = $p;
+    }
+}
+if (count($tickerItems) < 10 && count($products) > 0) {
+    $tickerItems = array_merge($tickerItems, array_slice($products, 0, 15));
+}
+$tickerIds = [];
+$finalTicker = [];
+foreach ($tickerItems as $t) {
+    if (!isset($tickerIds[$t['id']])) {
+        $tickerIds[$t['id']] = true;
+        $finalTicker[] = $t;
+    }
+    if (count($finalTicker) >= 15) break;
+}
+shuffle($finalTicker);
 ?>
     <div class="wrap home-wrap">
         <div class="topbar">
@@ -74,22 +138,11 @@ $bengaliTotal = toBengali($totalProducts);
 
 
 
-        <div class="hero">
+        <div class="hero" style="padding-top: 10px;">
             <div>
-                <p class="greeting">আসসালামু আলাইকুম</p>
-                <h1>
-                    আজ বাজারে<br>
-                    <span class="underline-wrap">কোন জিনিসের দাম কত?<svg viewBox="0 0 300 10" preserveAspectRatio="none"><path d="M2 6 Q75 2 150 6 T298 5" stroke="#D99A2B" stroke-width="3" fill="none" stroke-linecap="round"/></svg></span>
+                <h1 style="min-height: 40px; text-align: left; width: max-content; max-width: 100%; margin: 0 auto 15px auto; display: flex; align-items: flex-end;">
+                    <span id="typewriter"></span>
                 </h1>
-                <p class="sub">বাংলাদেশের <b>৬৪ জেলার</b> পাইকারি ও খুচরা বাজারদর প্রতিদিন হালনাগাদ হয় সকাল ৮টায় — চাল, সবজি, মাছ-মাংস থেকে মসলা পর্যন্ত।</p>
-
-                <div class="search">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" style="flex-shrink:0">
-                        <circle cx="11" cy="11" r="7" stroke="#9A968A" stroke-width="2"/>
-                        <path d="M20 20L16.5 16.5" stroke="#9A968A" stroke-width="2" stroke-linecap="round"/>
-                    </svg>
-                    <input type="text" id="search-input" placeholder="পণ্য খুঁজুন (যেমন: চাল, পেঁয়াজ)…" oninput="handleSearch(event)">
-                </div>
 
             </div>
         </div>
@@ -113,9 +166,39 @@ $bengaliTotal = toBengali($totalProducts);
 
             <!-- Price List -->
             <section class="prices-section" id="prices">
-                <div class="section-title">
-                    <h3>আজকের বাজার দর</h3>
-                    <span class="update-time">আপডেট: <?= $todayBengali ?></span>
+
+
+                <!-- Sleek Ticker Tape -->
+                <div class="market-ticker">
+                    <div class="ticker-track">
+                        <?php for($i=0; $i<2; $i++): // Render twice for seamless loop ?>
+                        <div class="ticker-content">
+                            <?php foreach($finalTicker as $item): 
+                                $diff = $item['diff'];
+                                if ($diff > 0) {
+                                    $iconClass = 'ph ph-trend-up text-trend-up';
+                                } elseif ($diff < 0) {
+                                    $iconClass = 'ph ph-trend-down text-trend-down';
+                                } else {
+                                    $iconClass = 'ph ph-minus text-trend-flat';
+                                }
+                            ?>
+                            <span class="ticker-item">
+                                <span class="ticker-item-name"><?= e($item['name']) ?>:</span> 
+                                <?= toBengali(roundRetailPrice($item['current_price'])) ?> ৳ 
+                                <i class="<?= $iconClass ?>"></i>
+                            </span>
+                            <span class="ticker-dot">•</span>
+                            <?php endforeach; ?>
+                        </div>
+                        <?php endfor; ?>
+                    </div>
+                </div>
+
+                <!-- Modern Search Bar -->
+                <div class="modern-search-bar">
+                    <span class="material-icons-round search-icon">search</span>
+                    <input type="text" id="search-input" placeholder="পণ্য খুঁজুন (যেমন: চাল, পেঁয়াজ, আলু)…" oninput="handleSearch(event)">
                 </div>
 
                 <div class="price-list" id="price-list">
@@ -131,7 +214,7 @@ $bengaliTotal = toBengali($totalProducts);
                         ?>
                         <div class="price-item" data-name="<?= e($p['name']) ?>" data-name-en="<?= e(strtolower($p['name_en'])) ?>" data-category="<?= e($p['category_name']) ?>" data-trend="<?= $trendValue ?>" onclick="window.location.href='/product/<?= e($p['slug']) ?>'" style="cursor: pointer;">
                             <div class="item-left">
-                                <img src="/assets/thumbs/<?= e(pathinfo($p['icon_path'], PATHINFO_FILENAME)) ?>.webp" alt="<?= e($p['name']) ?>" class="item-image" width="56" height="56" loading="lazy" decoding="async" onerror="this.src='<?= e($p['icon_path']) ?>'">
+                                <img src="/assets/thumbs/<?= e(pathinfo((string)$p['icon_path'], PATHINFO_FILENAME)) ?>.webp" alt="<?= e($p['name']) ?>" class="item-image" width="56" height="56" loading="lazy" decoding="async" onerror="this.src='<?= e($p['icon_path']) ?>'">
                                 <div class="item-details">
                                     <h4><?= e($p['name']) ?></h4>
                                     <p>প্রতি <?= e($p['unit']) ?></p>
@@ -155,42 +238,6 @@ $bengaliTotal = toBengali($totalProducts);
                     </button>
                 </div>
             </section>
-
-            <!-- Credibility / Trust Section -->
-            <div class="trust-divider"></div>
-            <details class="trust-accordion">
-                <summary class="trust-summary">
-                    <span class="material-icons-round">verified_user</span>
-                    <span style="flex:1;">আমাদের তথ্যের নির্ভরযোগ্যতা</span>
-                    <span class="material-icons-round drop-icon">expand_more</span>
-                </summary>
-                <div class="trust-content">
-                    <div class="trust-item">
-                        <div class="t-icon">
-                            <span class="material-icons-round">groups</span>
-                        </div>
-                        <div class="t-text">
-                            <strong>মাঠপর্যায়ের প্রতিনিধি</strong> কারওয়ান বাজার, চাঁদপুর, রংপুর, রাজশাহীসহ দেশের বিভিন্ন প্রান্ত থেকে আমাদের ৮ জনের একটি ডেডিকেটেড টিম প্রতিদিন বাজারের বাস্তব চিত্র সংগ্রহ করে।
-                        </div>
-                    </div>
-                    <div class="trust-item">
-                        <div class="t-icon">
-                            <span class="material-icons-round">storefront</span>
-                        </div>
-                        <div class="t-text">
-                            <strong>খুচরা বাজারের সঠিক দাম</strong> আমরা কোনো পাইকারি দর দেখাই না। একজন সাধারণ ক্রেতা বাজারে গেলে যে দামে পণ্য কিনতে পারেন, আমরা ঠিক সেই খুচরা (Retail) দামই প্রকাশ করি।
-                        </div>
-                    </div>
-                    <div class="trust-item">
-                        <div class="t-icon">
-                            <span class="material-icons-round">update</span>
-                        </div>
-                        <div class="t-text">
-                            <strong>নিয়মিত আপডেট</strong> প্রতিদিন সকাল ৮টার মধ্যে বাজারদর আপডেট করা হয়, যাতে আপনি সারাদিনের কেনাকাটার সঠিক সিদ্ধান্ত নিতে পারেন।
-                        </div>
-                    </div>
-                </div>
-            </details>
 
             <!-- Bottom spacing for mobile nav -->
             <div class="mobile-nav-spacer"></div>
@@ -320,6 +367,62 @@ $bengaliTotal = toBengali($totalProducts);
     </script>
 
     <script>
+    // Typewriter Effect
+    const typingStrings = <?= json_encode($typingStrings) ?>;
+    let typeIndex = 0;
+    let charIndex = 0;
+    let isDeleting = false;
+    const typeElement = document.getElementById('typewriter');
+    
+    function typeEffect() {
+        const currentData = typingStrings[typeIndex];
+        const currentString = currentData.text;
+        
+        if (isDeleting) {
+            charIndex--;
+            // Instantly skip over HTML tags when deleting backwards
+            if (currentString.charAt(charIndex) === '>') {
+                while (charIndex > 0 && currentString.charAt(charIndex) !== '<') {
+                    charIndex--;
+                }
+            }
+        } else {
+            // Instantly skip over HTML tags when typing forwards
+            if (currentString.charAt(charIndex) === '<') {
+                while (charIndex < currentString.length && currentString.charAt(charIndex) !== '>') {
+                    charIndex++;
+                }
+                charIndex++; // include the '>' character itself
+            } else {
+                charIndex++;
+            }
+        }
+        
+        let displayedStr = currentString.substring(0, charIndex);
+
+        // Add a simple cursor instead of the SVG underline
+        const cursor = '<span style="border-right: 2px solid var(--primary); margin-left: 2px; animation: blink 1s step-end infinite;">&nbsp;</span>';
+        typeElement.innerHTML = displayedStr + cursor;
+        
+        let typeSpeed = isDeleting ? 30 : 70;
+        
+        if (!isDeleting && charIndex === currentString.length) {
+            typeSpeed = 2500; // Pause at end
+            isDeleting = true;
+        } else if (isDeleting && charIndex === 0) {
+            isDeleting = false;
+            typeIndex = (typeIndex + 1) % typingStrings.length;
+            typeSpeed = 500; // Pause before typing next
+        }
+        
+        setTimeout(typeEffect, typeSpeed);
+    }
+    
+    // Start typing
+    setTimeout(typeEffect, 500);
+    </script>
+
+    <script>
     function openNotificationSheet(e) {
         e.preventDefault();
         document.getElementById('notif-overlay').classList.add('active');
@@ -334,5 +437,55 @@ $bengaliTotal = toBengali($totalProducts);
         document.getElementById('notif-sheet').classList.remove('active');
     }
     </script>
+
+    <!-- Site Footer -->
+    <footer class="site-footer">
+        <div class="footer-container">
+            <div class="footer-top">
+                <div class="footer-brand">
+                    <a href="#" class="footer-logo">
+                        <div class="footer-logo-icon">
+                            <i class="ph ph-leaf"></i>
+                        </div>
+                        <span class="footer-logo-text">Bazar<span class="footer-logo-highlight">Dor</span></span>
+                    </a>
+                    <p class="footer-desc">
+                        Bringing transparency to Bangladesh's grocery markets. Empowering consumers with accurate daily data.
+                    </p>
+                </div>
+                
+                <div class="footer-links-wrapper">
+                    <div class="footer-col">
+                        <h4>Platform</h4>
+                        <ul>
+                            <li><a href="/market-index">Market Index</a></li>
+                            <li><a href="/price-history">Price History</a></li>
+                            <li><a href="/sms-alerts">SMS Alerts</a></li>
+</ul>
+                    </div>
+                    
+                    <div class="footer-col">
+                        <h4>Company</h4>
+                        <ul>
+                            <li><a href="/about">About Us</a></li>
+                            <li><a href="/methodology">Methodology</a></li>
+                            <li><a href="/privacy">Privacy</a></li>
+                            <li><a href="/terms">Terms</a></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="footer-bottom">
+                <p class="footer-copyright">
+                    &copy; <span id="year"><?= date('Y') ?></span> BazarDor Platform. Designed in Bangladesh.
+                </p>
+                <div class="footer-socials">
+                    <a href="https://www.facebook.com/BazardorApp" target="_blank" class="footer-social-btn"><i class="ph ph-facebook-logo"></i></a>
+                </div>
+            </div>
+        </div>
+    </footer>
 </body>
-</html>
+
+

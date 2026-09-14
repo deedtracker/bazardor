@@ -35,18 +35,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Generate WebP
                 $newFilename = strtolower(preg_replace('/[^a-z0-9]+/i', '-', $name_en)) . '_' . time() . '.webp';
                 $destPath = __DIR__ . '/../assets/' . $newFilename;
+                $thumbPath = __DIR__ . '/../assets/thumbs/' . $newFilename;
                 
-                $img = null;
-                switch ($imgInfo[2]) {
-                    case IMAGETYPE_JPEG: $img = imagecreatefromjpeg($tmpName); break;
-                    case IMAGETYPE_PNG: $img = imagecreatefrompng($tmpName); break;
-                    case IMAGETYPE_WEBP: $img = imagecreatefromwebp($tmpName); break;
-                }
-
-                if ($img) {
-                    imagepalettetotruecolor($img);
-                    imagewebp($img, $destPath, 80);
-                    imagedestroy($img);
+                if (processUploadedImage($tmpName, $destPath, $thumbPath)) {
                     $iconPath = 'assets/' . $newFilename;
                 }
             }

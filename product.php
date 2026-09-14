@@ -149,7 +149,7 @@ $ogImage = SITE_URL . '/' . e($product['icon_path']);
                 <div class="product-hero">
                     <div class="product-hero-top">
                         <div class="product-icon-wrap">
-                            <img src="/assets/thumbs/<?= e(pathinfo($product['icon_path'], PATHINFO_FILENAME)) ?>.webp" alt="<?= e($product['name']) ?>" width="64" height="64" loading="lazy" decoding="async" onerror="this.src='/<?= e($product['icon_path']) ?>'">
+                            <img src="/assets/thumbs/<?= e(pathinfo((string)$product['icon_path'], PATHINFO_FILENAME)) ?>.webp" alt="<?= e($product['name']) ?>" width="64" height="64" loading="lazy" decoding="async" onerror="this.src='/<?= e($product['icon_path']) ?>'">
                         </div>
                         <div>
                             <div class="product-hero-title"><?= e(getBengaliPossessive($product['name'])) ?> আজকের বাজারদর</div>
